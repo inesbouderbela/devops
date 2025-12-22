@@ -28,10 +28,10 @@ jobs:
           pip install -r requirements.txt
           pip install bandit
 
-      # 4️⃣ Run tests
       - name: Run simple tests
         run: |
-          python -m pytest tests/ || echo "Tests failed, check manually"
+          python -m pytest tests/
+
 
       # 5️⃣ Run SAST (Bandit)
       - name: Run Bandit security scan
