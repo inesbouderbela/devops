@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request
+from fastapi.responses import Response  # ADD THIS
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 import logging
 import time
@@ -39,6 +40,11 @@ async def metrics_middleware(request: Request, call_next):
     logging.info(f'{{"method": "{request.method}", "path": "{request.url.path}", "status": {response.status_code}}}')
     return response
 
+# ADD THIS ENDPOINT (NEW)
+@app.get("/")
+def root():
+    return {"message": "DevOps API", "version": "1.0"}
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -47,8 +53,7 @@ def health():
 def hello(name: str = "World"):
     return {"message": f"Hello, {name}!"}
 
+# FIX THIS ENDPOINT (CHANGED)
 @app.get("/metrics")
 def metrics():
-    return generate_latest(), 200, {"Content-Type": CONTENT_TYPE_LATEST}
-
-# Run with: uvicorn app.main:app --reload --port 8000
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
