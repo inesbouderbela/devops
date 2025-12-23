@@ -55,7 +55,7 @@ jobs:
 
       # 8️⃣ Upload DAST report as artifact
       - name: Upload DAST report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dast-report
           path: reports/zap_report.html
