@@ -11,68 +11,63 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout code
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2️⃣ Set up Python
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
           python-version: 3.11
 
-      # 3️⃣ Install dependencies
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install bandit
 
-      # 4️⃣ Start FastAPI server in background
       - name: Start FastAPI server
         run: |
           nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 &
           sleep 5
 
-      # 5️⃣ Run API tests
       - name: Run API tests
         run: |
           python -m pytest tests/
 
-      # 6️⃣ Run SAST (Bandit)
       - name: Run Bandit security scan
         run: |
           bandit -r app/ -f json -o bandit_report.json
           cat bandit_report.json
 
-      # 7️⃣ Run DAST (ZAP)
+      - name: Prepare DAST reports folder
+        run: |
+          mkdir -p ${{ github.workspace }}/reports
+          chmod 777 ${{ github.workspace }}/reports
+
       - name: Run OWASP ZAP DAST scan
         run: |
-          mkdir -p reports
-          docker run --rm -v ${{ github.workspace }}/reports:/zap/wrk/:rw \
+          docker run --rm --network host \
+          -v ${{ github.workspace }}/reports:/zap/wrk/:rw \
           -t docker.io/zaproxy/zap-stable zap-baseline.py \
-          -t http://host.docker.internal:8000 -r /zap/wrk/zap_report.html
+          -t http://127.0.0.1:8000 -r /zap/wrk/zap_report.html
 
-      # 8️⃣ Upload DAST report as artifact
       - name: Upload DAST report
         uses: actions/upload-artifact@v4
         with:
           name: dast-report
           path: reports/zap_report.html
 
-      # 9️⃣ Log in to Docker Hub
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # 🔟 Build Docker image
       - name: Build Docker image
         run: |
           docker build -t devops-api .
 
-      # 1️⃣1️⃣ Push Docker image
+      
       - name: Push Docker image
         run: |
           docker tag devops-api ${{ secrets.DOCKER_USERNAME }}/devops-api:latest

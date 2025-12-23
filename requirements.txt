@@ -6,3 +6,4 @@ opentelemetry-sdk
 opentelemetry-instrumentation-fastapi
 requests
 pytest
+bandit
