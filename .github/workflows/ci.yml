@@ -97,16 +97,46 @@ jobs:
           docker build -t ${{ secrets.DOCKER_USERNAME }}/devops-api:latest .
           docker push ${{ secrets.DOCKER_USERNAME }}/devops-api:latest
 
-     
+      # 1️⃣3️⃣ Set up Kubernetes (Kind)
+      - name: Set up Kubernetes with Kind
+        uses: helm/kind-action@v1.8.0
+        with:
+          cluster_name: devops-cluster
+          wait: 30s
+
+      # 1️⃣4️⃣ Verify Kubernetes cluster
+      - name: Verify Kubernetes cluster
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
+
+      # 1️⃣5️⃣ Load Docker image into Kind
+      - name: Load Docker image into Kind
+        run: |
+          kind load docker-image ${{ secrets.DOCKER_USERNAME }}/devops-api:latest --name devops-cluster
+
+      # 1️⃣6️⃣ Deploy on Kubernetes
       - name: Deploy on Kubernetes
         run: |
           kubectl apply -f k8s/
-          sleep 10
+          kubectl rollout status deployment/api-deployment --timeout=60s
+          kubectl get all
 
-      
+      # 1️⃣7️⃣ Test Kubernetes endpoints
       - name: Test Kubernetes endpoints
         run: |
+          # Wait for pod to be ready
+          kubectl wait --for=condition=ready pod -l app=api --timeout=60s
+          
+          # Get pod name
           POD_NAME=$(kubectl get pods -l app=api -o jsonpath="{.items[0].metadata.name}")
+          echo "Testing pod: $POD_NAME"
+          
+          # Test using port-forward
           kubectl port-forward $POD_NAME 8000:8000 &
           sleep 5
+          
+          # Test endpoints
+          curl http://127.0.0.1:8000/ || exit 1
           curl http://127.0.0.1:8000/health || exit 1
+          echo "Kubernetes deployment successful!"
