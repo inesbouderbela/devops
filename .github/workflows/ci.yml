@@ -51,15 +51,15 @@ jobs:
           mkdir -p ${{ github.workspace }}/reports
           chmod 777 ${{ github.workspace }}/reports
 
-      # 8️⃣ Run OWASP ZAP DAST scan using official GitHub Action
+      # 8️⃣ Run OWASP ZAP DAST scan using GitHub Action
       - name: Run OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.7.0
         with:
           target: 'http://localhost:8000'
-          report-format: 'html'
-          output-path: 'reports/zap_report.html'
+          docker_name: 'zaproxy/zap-stable:latest'
+          cmd_options: '-r reports/zap_report.html -I'
 
-      # 9️⃣ Upload DAST report
+      # 9️⃣ Upload DAST report as artifact
       - name: Upload DAST report
         uses: actions/upload-artifact@v4
         with:
